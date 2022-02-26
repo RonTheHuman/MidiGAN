@@ -1,0 +1,4 @@
+D:\AlphaProject\_PythonML\pythonProject\Extracted_Features\battle_features.xml
+D:\AlphaProject\_PythonML\pythonProject\Extracted_Features\title_features.xml
+D:\AlphaProject\_PythonML\pythonProject\Extracted_Features\battle_halved_features.xml
+D:\AlphaProject\_PythonML\pythonProject\Extracted_Features\title_halved_features.xml
