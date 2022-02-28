@@ -23,8 +23,6 @@ def create_discriminator(melody_arr_length, kernel_size, filters_arr, strides_ar
     for filters, strides in zip(filters_arr, strides_arr):
         classifier.add(keras.layers.Conv1D(filters, kernel_size,
                                            strides=strides, padding='same', activation=leaky_relu))
-        # huh ok so filters and kernel size were switched here
-        # in run 3 i fixed them
     classifier.add(keras.layers.Flatten())
     classifier.add(keras.layers.Dense(300))
     classifier.add(keras.layers.Dense(1))
@@ -53,7 +51,7 @@ def main():
     checkpoints = (16, 50, 100, 300, 700, 1024, 2048, 2500, 3000, 3500, 4096)
     dataset = "title"
     model_name = "conv_gan_1.1"
-    run = 6
+    run = 4
     save_dir = f"gan_results/{model_name}/{dataset}/folder/run{run}"
 
     generator = create_generator(noise_size, 0.5, 6, (70, 70, 70, 70), (5, 2, 1, 1))
@@ -61,9 +59,9 @@ def main():
     exit()
     epochs_to_load = (16, 50, 100, 300, 700, 1024, 2048, 2500, 3000, 3500, 4096)
     if load and not generate:
-        strat_epochs = epochs_to_load[0]
-        discriminator.load_weights(f"{save_dir.replace('folder', 'disc')}_epoch{strat_epochs}.h5")
-        generator.load_weights(f"{save_dir.replace('folder', 'gen')}_epoch{strat_epochs}.h5")
+        start_epochs = epochs_to_load[0]
+        discriminator.load_weights(f"{save_dir.replace('folder', 'disc')}_epoch{start_epochs}.h5")
+        generator.load_weights(f"{save_dir.replace('folder', 'gen')}_epoch{start_epochs}.h5")
         print("Loaded trained model")
 
     midi_to_gen = 8
@@ -90,9 +88,6 @@ def main():
 
     acc_real = []
     acc_fake = []
-    # ckpt_epochs = iter(range(int(epochs/checkpoints), epochs + 1, int(epochs/checkpoints)))
-    # next_to_ckpt = next(ckpt_epochs)
-    # saved_ckpts = 0
     for i in range(epochs):
         print("epoch: " + f"{i + 1}")
         batch_start = 1
@@ -124,9 +119,6 @@ def main():
             discriminator_optimizer.apply_gradients(zip(disc_grad, discriminator.trainable_variables))
 
         if i + 1 in checkpoints:
-            # if saved_ckpts + 1 < checkpoints:
-            #     next_to_ckpt = next(ckpt_epochs)
-            #     saved_ckpts += 1
             print("Saved model\n")
             discriminator.save_weights(f"{save_dir.replace('folder', 'disc')}_epoch{i + 1}.h5")
             generator.save_weights(f"{save_dir.replace('folder', 'gen')}_epoch{i + 1}.h5")
