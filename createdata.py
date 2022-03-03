@@ -12,8 +12,7 @@ def main():
 
     """
     remove file names and save feature names, because pandas removes column titles.
-    why did I use pandas though???
-    who knows maybe there was a good reason.
+    pandas is used for its built in exel -> numpy functions
     """
     f_title = f_title.drop(f_title.columns[0], axis=1)
     f_battle = f_battle.drop(f_battle.columns[0], axis=1)

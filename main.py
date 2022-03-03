@@ -6,11 +6,12 @@ import halvemelodies
 import old_gan
 import gan
 import evaluate_classifier
+import evaluate_gan
 
 
 if __name__ == '__main__':
     PATH = f"D:/AlphaProject/_PythonML/MidiGAN"
-    action = 8
+    action = 9
     if action == 1:
         # preparemidi.main('snes/normal', 0, 100)
         preparemidi.main('title', 1000, 100)
@@ -28,5 +29,8 @@ if __name__ == '__main__':
         gan.main()
     elif action == 8:
         evaluate_classifier.main()
+    elif action == 9:
+        evaluate_gan.main()
+
 
 

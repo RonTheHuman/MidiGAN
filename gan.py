@@ -47,24 +47,24 @@ def main():
     batch_size = 512
     noise_size = [10, 30]
     melody_arr_length = 100
-    epochs = 4096
-    checkpoints = (16, 50, 100, 300, 700, 1024, 2048, 2500, 3000, 3500, 4096)
-    dataset = "title"
+    epochs = 3500
+    # checkpoints = (16, 100, 700, 1500, 2000, 2500, 3000, 3500)
+    checkpoints = (16, 50, 100, 300, 700, 1024, 2048, 2500, 3000, 3500)
+    dataset = "battle"
     model_name = "conv_gan_1.1"
-    run = 4
+    run = 3
     save_dir = f"gan_results/{model_name}/{dataset}/folder/run{run}"
 
     generator = create_generator(noise_size, 0.5, 6, (70, 70, 70, 70), (5, 2, 1, 1))
     discriminator = create_discriminator(melody_arr_length, 6, (50, 50, 50, 50), (5, 2, 1, 1))
-    exit()
-    epochs_to_load = (16, 50, 100, 300, 700, 1024, 2048, 2500, 3000, 3500, 4096)
+    epochs_to_load = (3500, )
     if load and not generate:
         start_epochs = epochs_to_load[0]
         discriminator.load_weights(f"{save_dir.replace('folder', 'disc')}_epoch{start_epochs}.h5")
         generator.load_weights(f"{save_dir.replace('folder', 'gen')}_epoch{start_epochs}.h5")
         print("Loaded trained model")
 
-    midi_to_gen = 8
+    midi_to_gen = 100
     if load and generate:
         for etl in epochs_to_load:
             generator.load_weights(f"{save_dir.replace('folder', 'gen')}_epoch{etl}.h5")

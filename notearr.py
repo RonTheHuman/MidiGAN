@@ -71,7 +71,7 @@ def folder_to_midifile_arr(in_path):
 #     return midi_arr
 
 
-def midifile_arr_to_note_arrs_norm(midi_arr, default_tpb, default_mspb):
+def midifile_arr_to_note_arrs_norm(midi_arr, default_tpb=48, default_mspb=500000):
     note_arrs = []
     for midifile in midi_arr:
         note_arr = list()
@@ -126,13 +126,13 @@ def save_midi(midifiles, path):
 
 
 def main():
-    folder = "battle"
-    midifile_arr = folder_to_midifile_arr(f"melodies/{folder}")
+    folders = ["battle", "title"]
+    midifile_arr = folder_to_midifile_arr(f"melodies/{folders[0]}") + folder_to_midifile_arr(f"melodies/{folders[1]}")
     print(repr(midifile_arr))
     note_arrs = midifile_arr_to_note_arrs_norm(midifile_arr, 48, 500000)
-    print(np.array(note_arrs))
-    np.save(f"melody_arrays/{folder}", np.array(note_arrs))
-    with open(f"melody_arrays/{folder}.txt", "w") as file:
+    print(np.array(note_arrs).shape)
+    np.save(f"melody_arrays/all", np.array(note_arrs))
+    with open(f"melody_arrays/all.txt", "w") as file:
         file.write(repr(note_arrs))
 
 
