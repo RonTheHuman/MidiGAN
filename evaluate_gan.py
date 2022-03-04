@@ -23,14 +23,14 @@ def dict_deviation(dict):
     avg = val_sum / n
     sdist_sum = sum([((k - avg) ** 2) * v for k, v in dict.items()])  # squared distance from average sum
     deviation = sqrt(sdist_sum / n)
-    print(f"n: {n}, val_sum: {val_sum}, avg: {avg}")
+    # print(f"n: {n}, val_sum: {val_sum}, avg: {avg}")
     return deviation
 
 
 def make_plot(dbase_name, feature_name, feature_units, dbase, start_run, runs, epochs):
     for i, run in enumerate(runs):
         plt.plot(epochs, run, f"-o", label=f"run{i + start_run}")
-    plt.plot(epochs, (dbase, )*len(epochs), "k", label=dbase_name)
+    plt.plot(epochs, (dbase,) * len(epochs), "k", label=dbase_name)
     plt.ylabel(f"{feature_name}({feature_units})")
     plt.xlabel("epochs")
     cur_ylim = plt.gca().get_ylim()
@@ -45,6 +45,7 @@ def main():
 
     # show not collapse
     if task == 0:
+        all_deviations = []
         for run in range(1, 7):
             if run <= 3:
                 folder = "battle"
@@ -64,10 +65,10 @@ def main():
             # notearrs = np.array([[1, 2, 3, 1, 2, 3, 1, 2, 3],
             #                      [2, 3, 4, 2, 3, 4, 2, 3, 4],
             #                      [3, 4, 5, 3, 4, 5, 3, 4, 5]])
-            print(f"notearrs: \n {notearrs} \n")
+            # print(f"notearrs: \n {notearrs} \n")
 
-            single_note = False
-            note_to_analyze = 0
+            single_note = True
+            note_to_analyze = 1
             """
             create three types of histograms:
             - one for time deltas
@@ -77,20 +78,22 @@ def main():
             compute the standard deviation of each histogram, and average all the standard deviations of the same type. 
             """
 
-            grid = (3, 2)
+            grid = (1, 1)
             g_size = grid[0] * grid[1]
-            val_names = {0: "time-delta", 1: "note-delta", 2: "duration"}
+            val_names = ("time-delta", "note-delta", "duration")
+            val_units = ("ticks", "semitones", "ticks")
 
-            all_deviations = []
+            run_deviations = []
             for i in range(3):
-                fig, plots = plt.subplots(*grid, figsize=(10, 10))
+                fig, plots = plt.subplots(*grid, figsize=(9, 6))
                 plot_i = 0
 
                 if not single_note:
                     all_vals = notearrs[:, i::3]
                 else:
                     all_vals = np.array([notearrs[:, note_to_analyze * 3 + i], ]).T
-                print(f"val {i}: \n {all_vals} \n")
+                print(f"val {val_names[i]}:")
+                # print(f" \n {all_vals} \n")
                 val_deviations = []
                 for note_vals in all_vals.T:
                     val_hgram = make_hgram(note_vals)
@@ -106,15 +109,29 @@ def main():
                         plot_i += 1
 
                 avg_val_deviation = np.average(val_deviations)
-                all_deviations.append(avg_val_deviation)
+                run_deviations.append(avg_val_deviation)
+                # print(val_deviations)
                 print(avg_val_deviation)
-
-                plot_name = f"run{run}, epoch{epoch}, histograms of {val_names[i]} " \
-                            f"over the first {g_size} notes of {len(files)} melodies"
-                fig.suptitle(plot_name)
-                fig.text(0.5, 0.02, f"average standard deviation on 100 notes: {avg_val_deviation}", ha="center")
+                if single_note:
+                    s = ""
+                else:
+                    s = "s"
+                plot_name = f"run{run}, epoch{epoch}, histogram{s} of {val_names[i]} " \
+                            f"over the first {g_size} note{s} of {len(files)} melodies"
+                plt.title(plot_name)
+                if single_note:
+                    # fig.text(0.5, 0.015, f"average standard deviation on 1 note: {avg_val_deviation}", ha="center")
+                    pass
+                else:
+                    fig.text(0.5, 0.015, f"average standard deviation on 100 notes: {avg_val_deviation}", ha="center")
+                plt.xlabel(f"{val_names[i]} ({val_units[i]})")
+                plt.ylabel("amount")
                 plt.savefig(f"gan_results/plots/r{run}e{epoch}g{g_size}_{val_names[i]}")
-            print(all_deviations)
+            if single_note:
+                exit()
+            all_deviations.append(run_deviations)
+        np.savetxt("gan_results/plots/final_epoch_deviations.csv", np.asarray(all_deviations), delimiter=",")
+        print(all_deviations)
 
     # show improvement
     if task == 1:
@@ -130,7 +147,7 @@ def main():
             if "run" in file:
                 epoch_avgs = []
                 for i in range(len(saved_epochs)):
-                    epoch_avg = note_len[i:i+from_each_epoch]
+                    epoch_avg = note_len[i:i + from_each_epoch]
                     epoch_avg = epoch_avg.mean(0)[0]
                     epoch_avgs.append(epoch_avg)
                     print(file)
@@ -170,22 +187,18 @@ def main():
                             print("ran off")
                             epoch_count += 1
                             break
-                run_count.append(epoch_count*100/from_each_epoch)
+                run_count.append(epoch_count * 100 / from_each_epoch)
             all_count.append(run_count)
         print(all_count)
 
         np.savetxt("gan_results/plots/runoff_p.csv", np.asarray(all_count), delimiter=",")
 
-        avg_count = []
-        c_len = len(all_count)
-        for i in range(len(saved_epochs)):
-            c_sum = sum([x[i] for x in all_count])
-            avg = c_sum/c_len
-            avg_count.append(avg)
-        plt.plot(saved_epochs, avg_count, f"-o", label=f"run average")
-        plt.legend()
-        plt.show()
-
-
-
-
+        # avg_count = []
+        # c_len = len(all_count)
+        # for i in range(len(saved_epochs)):
+        #     c_sum = sum([x[i] for x in all_count])
+        #     avg = c_sum/c_len
+        #     avg_count.append(avg)
+        # plt.plot(saved_epochs, avg_count, f"-o", label=f"run average")
+        # plt.legend()
+        # plt.show()
