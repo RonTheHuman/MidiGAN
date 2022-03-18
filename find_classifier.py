@@ -44,15 +44,10 @@ def main():
     acc_checks = 50  # including end checkpoint
     batch_size = 64
     val_folds = 7
-    # values for grid search, replaced by optimal values below
-    # dropout_arr = [0.0, 0.2, 0.4]
-    # middle_layers_arr = [1, 2, 3]
-    # learning_rate_arr = [0.01, 0.001, 0.0001]
-
-    dropout_arr = [0.0]
-    middle_layers_arr = [1]
-    learning_rate_arr = [0.01]
-
+    # values for grid search
+    dropout_arr = [0.0, 0.2, 0.4]
+    middle_layers_arr = [1, 2, 3]
+    learning_rate_arr = [0.01, 0.001, 0.0001]
     # empty lists for data
     train_acc = np.empty(shape=[val_folds, acc_checks])
     validation_acc = np.empty(shape=[val_folds, acc_checks])
@@ -77,17 +72,17 @@ def main():
             model = create_model(x_val_train.shape[1], dropout_rate, middle_layers, learning_rate)
             for j in range(acc_checks):
                 model.fit(x_val_train, y_val_train.T, verbose=1, epochs=int(epochs / acc_checks), batch_size=batch_size)
+                # save acc data for graph. discovered later that there is a built in feature for it :|
                 train_acc[i][j] = (model.evaluate(x_val_train, y_val_train, verbose=0)[1])
                 validation_acc[i][j] = (model.evaluate(x_validation, y_validation, verbose=0)[1])
-
+        # averages data over all validation runs
         train_acc_avg = np.average(train_acc, axis=0)
         validation_acc_avg = np.average(validation_acc, axis=0)
-        print(f"train acc: {train_acc_avg[-1]} \n val acc: "
-              f"{validation_acc_avg[-1]}")
+        print(f"train acc: {train_acc_avg[-1]} \n val acc: {validation_acc_avg[-1]}")
         # creates the result lists, that are turned into a csv file later
         results.append(["training", dropout_rate, middle_layers, learning_rate] + train_acc_avg.tolist())
         results.append(["validation", dropout_rate, middle_layers, learning_rate] + validation_acc_avg.tolist())
-
+    # write results to csv
     with open(f"classifier_results/Data/halved_results.csv", "w", newline="") as outfile:
         writer = csv.writer(outfile, "excel")
         writer.writerow(["type", "dropout", "middle layers", "learning rate"] + [f"{x * epochs / acc_checks} epochs"

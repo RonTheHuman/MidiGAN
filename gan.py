@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from time import time
 
 
+# create a generator as described, always ends in 3 filters for a notearr fitting shape
 def create_generator(noise_size, droupout_rate, kernel_size, filters_arr, strides_arr):
     generator = keras.Sequential(keras.layers.InputLayer(input_shape=noise_size))
     for filters, strides in zip(filters_arr, strides_arr):
@@ -17,6 +18,7 @@ def create_generator(noise_size, droupout_rate, kernel_size, filters_arr, stride
     return generator
 
 
+# create a discriminator with melody shape input and size one output
 def create_discriminator(melody_arr_length, kernel_size, filters_arr, strides_arr):
     classifier = keras.Sequential(keras.layers.InputLayer(input_shape=(melody_arr_length, 3)))
     leaky_relu = tf.keras.layers.LeakyReLU()
@@ -30,6 +32,7 @@ def create_discriminator(melody_arr_length, kernel_size, filters_arr, strides_ar
     return classifier
 
 
+# losses as described in GAN article
 def discriminator_loss(real_out, fake_out):
     cross_entropy = keras.losses.BinaryCrossentropy(from_logits=True)
     return cross_entropy(np.ones_like(real_out), real_out) + cross_entropy(np.zeros_like(fake_out), fake_out)
@@ -48,7 +51,6 @@ def main():
     noise_size = [10, 30]
     melody_arr_length = 100
     epochs = 3500
-    # checkpoints = (16, 100, 700, 1500, 2000, 2500, 3000, 3500)
     checkpoints = (16, 50, 100, 300, 700, 1024, 2048, 2500, 3000, 3500)
     dataset = "battle"
     model_name = "conv_gan_1.1"
@@ -57,6 +59,7 @@ def main():
 
     generator = create_generator(noise_size, 0.5, 6, (70, 70, 70, 70), (5, 2, 1, 1))
     discriminator = create_discriminator(melody_arr_length, 6, (50, 50, 50, 50), (5, 2, 1, 1))
+    exit()
     epochs_to_load = (3500, )
     if load and not generate:
         start_epochs = epochs_to_load[0]
@@ -105,7 +108,7 @@ def main():
 
             gen_grad = gen_tape.gradient(gen_loss, generator.trainable_variables)
             disc_grad = disc_tape.gradient(disc_loss, discriminator.trainable_variables)
-
+            # calculate loss and accuracy of disc and gen
             if batch_start:
                 acc_real.append(np.average(tf.math.sigmoid(disc_real_out).numpy()))
                 acc_fake.append(np.average(tf.math.sigmoid(disc_fake_out).numpy()))
@@ -117,12 +120,12 @@ def main():
 
             generator_optimizer.apply_gradients(zip(gen_grad, generator.trainable_variables))
             discriminator_optimizer.apply_gradients(zip(disc_grad, discriminator.trainable_variables))
-
+        # save model if the epoch is in checkpoints list
         if i + 1 in checkpoints:
             print("Saved model\n")
             discriminator.save_weights(f"{save_dir.replace('folder', 'disc')}_epoch{i + 1}.h5")
             generator.save_weights(f"{save_dir.replace('folder', 'gen')}_epoch{i + 1}.h5")
-
+    # save final weights
     discriminator.save_weights(f"{save_dir.replace('folder', 'disc')}_epoch{i + 1}.h5")
     generator.save_weights(f"{save_dir.replace('folder', 'gen')}_epoch{i + 1}.h5")
     print("Saved final model")
@@ -131,7 +134,3 @@ def main():
     plt.plot(acc_fake, label="acc on generated")
     plt.legend()
     plt.savefig(save_dir.replace("folder", "plots"))
-
-
-if __name__ == '__main__':
-    main()

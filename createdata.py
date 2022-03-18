@@ -5,11 +5,10 @@ from sklearn.model_selection import train_test_split
 
 def main():
     folder = "extracted_features"
-    halved = "_halved"
+    halved = ""  # set to "_halved" when extracting features from the halved dbase
     # turn exel file to dataframe, f is short for features
     f_title = pandas.read_csv(f"{folder}/title{halved}_features.csv")
     f_battle = pandas.read_csv(f"{folder}/battle{halved}_features.csv")
-
     """
     remove file names and save feature names, because pandas removes column titles.
     pandas is used for its built in exel -> numpy functions

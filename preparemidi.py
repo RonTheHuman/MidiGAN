@@ -1,29 +1,23 @@
 import mido as md
 import os
 import time
-import random as rnd
 import mido.midifiles.meta
 import mergemid
 
 
 # takes all midi files in in_path, and makes merged midi files in out_path. n is the amount of files to merge.
-def merge_tracks(in_path, out_path, index):
-    file_name = os.listdir(in_path)
-    file_name = sorted(file_name)[index]
-    merge_file = open(f"{out_path}/{file_name}", 'w')
-    merge_file.close()
+def merge_tracks(in_path, out_path, file_name):
     try:
         mergemid.main(f"{in_path}/{file_name}", f"{out_path}/{file_name}")
     except AssertionError:
-        return None
+        return False
     except EOFError:
-        return None
-    return file_name
+        return False
+    return True
 
 
-# makes a MidiFile array out of all midi files in a folder
+# turns a file into a MIDI object
 def file_to_midifile(file_path):
-    print(file_path)
     try:
         return md.MidiFile(f"{file_path}")
     except EOFError:
@@ -42,7 +36,6 @@ def file_to_midifile(file_path):
 
 # filters midi files to only a tempo message followed by note_on messages
 def only_note(midifile):
-    # print_midi(midifile)
     if midifile is None:
         return None
     onlyn_midi = md.MidiFile()
@@ -61,7 +54,7 @@ def only_note(midifile):
             out_track.append(md.Message('note_on', channel=off_msg.channel, note=off_msg.note, velocity=0,
                                         time=off_msg.time))
     onlyn_midi.ticks_per_beat = midifile.ticks_per_beat
-    print(tempo)
+    print(f"tempo: {tempo}")
     out_track.insert(0, md.MetaMessage('set_tempo', tempo=tempo, time=0))
     onlyn_midi.tracks.append(out_track)
     return onlyn_midi
@@ -75,7 +68,7 @@ def no_percussion(midifile):
     in_track = midifile.tracks[0][1:]
     out_track = md.MidiTrack()
     out_track.append(midifile.tracks[0][0])
-    print(midifile.tracks[0][0])
+    # print(midifile.tracks[0][0])
     for j, msg in enumerate(in_track):
         if msg.channel < 9:
             out_track.append(translate_time(in_track, j, out_track).copy(channel=0))
@@ -139,13 +132,13 @@ def highest_pitch(midifile):
     return highp_midi
 
 
-def same_length(midifile, n):
+def set_length(midifile, n):
     if midifile is None:
         return None
     samel_midi = md.MidiFile()
     out_track = md.MidiTrack()
     out_track.append(midifile.tracks[0][0])
-    print(midifile.tracks[0][0])
+    # print(midifile.tracks[0][0])
     in_track = midifile.tracks[0][1:]
     if len(in_track) >= n*2:
         out_track += in_track[:n*2]
@@ -157,8 +150,6 @@ def same_length(midifile, n):
             return None
     samel_midi.tracks.append(out_track)
     samel_midi.ticks_per_beat = midifile.ticks_per_beat
-    # print_midi(midi_arr[i])
-    # print(len(midi_arr[i].tracks[0]))
     return samel_midi
 
 
@@ -190,22 +181,6 @@ def replace_files(midifile, out_path, file_name):
     midifile.save(f"{out_path}/{file_name}")
 
 
-# redundant. finds the note off message for a given note on and gives it the correct delta time
-def find_note_off(track, i):
-    total_time = 0
-    on_msg = track[i]
-    while i < len(track):
-        i += 1
-        msg = track[i]
-        total_time += msg.time
-        if msg.type == 'note_on':
-            if msg.velocity == 0:
-                if msg.note == on_msg.note:
-                    return msg.copy(time=total_time)
-    print("no note_off found")
-    return None
-
-
 # calculates the delta time needed considering removed messages
 def translate_time(in_track, i, out_track):
     total_time_in = 0
@@ -218,7 +193,7 @@ def translate_time(in_track, i, out_track):
     return out_msg
 
 
-# redundant. prints midi files with an option for a message filter
+# for debugging: prints midi files with an option for a message filter
 def print_midi(midi, types=None, control=-1):
     for i, track in enumerate(midi.tracks):
         print(f'Track {i}: {track.name}')
@@ -235,53 +210,40 @@ def print_midi(midi, types=None, control=-1):
                     # break
 
 
-def main(folder, index, amount_of_notes):
-    # print(md.MidiFile('../rawmusic/title/1999.mid'))
+def main():
+    # set which files to prepare
     IN_PATH = '../rawmusic'
     OUT_PATH = 'melodies'
+    folder = "title"
+    start_index = 0
+    amount_of_files = 100
+    files = sorted(os.listdir(f"{IN_PATH}/{folder}"))
+
+    amount_of_notes = 100
+
     start_time = time.time()
-    file_name = merge_tracks(f"{IN_PATH}/{folder}", f"{OUT_PATH}/{folder}", index)
-    if file_name is None:
-        return
-    print("Merged tracks")
-    midifile = file_to_midifile(f"{OUT_PATH}/{folder}")
-    print("Turned to arrays")
-    midifile = only_note(midifile)
-    print("Filtered notes")
-    midifile = no_percussion(midifile)
-    print("Filtered percussion")
-    midifile = highest_pitch(midifile)
-    print("Filtered highest pitch")
-    midifile = same_length(midifile, amount_of_notes)
-    print("Standardised length")
-    midifile = remove_ghost_notes(midifile)
-    midifile = same_length(midifile, amount_of_notes)
-    print("Removed ghost notes")
-    replace_files(midifile, f"{OUT_PATH}/{folder}")
+    for i in range(start_index, min(start_index + amount_of_files, len(files))):
+        file_name = files[i]
+        print(f"file number {i}: {file_name}")
+        merged = merge_tracks(f"{IN_PATH}/{folder}", f"{OUT_PATH}/{folder}", file_name)
+        if not merged:
+            continue
+        print("Merged tracks")
+        midifile = file_to_midifile(f"{OUT_PATH}/{folder}/{file_name}")
+        print("Turned to MIDI object")
+        midifile = only_note(midifile)
+        print("Filtered notes")
+        midifile = no_percussion(midifile)
+        print("Filtered percussion")
+        # the skyline algorithm - takes the highest pitch note at each given moment
+        midifile = highest_pitch(midifile)
+        print("Filtered highest pitch")
+        midifile = set_length(midifile, amount_of_notes)
+        print(f"Set length to be {amount_of_notes} notes")
+        # ghost notes are very short notes (sometimes of zero duration) that can emerge after doing skyline
+        midifile = remove_ghost_notes(midifile)
+        midifile = set_length(midifile, amount_of_notes)
+        print("Removed ghost notes")
+        replace_files(midifile, f"{OUT_PATH}/{folder}", file_name)
+        print("replaced file\n")
     print(time.time() - start_time)
-
-
-if __name__ == "main":
-    pass
-    # folder = 'test'
-    # main(folder)
-
-    # test file debugging
-    # if True:
-    #     t_file = md.MidiFile()
-    #     t_track = md.MidiTrack()
-    #     t_track.append(md.MetaMessage(type='set_tempo', tempo=480000, time=0))
-    #     t_track.append(md.Message(type='note_on', note=62, time=150))
-    #     t_track.append(md.Message(type='note_on', note=67, time=100))
-    #     t_track.append(md.Message(type='control_change', time=150))
-    #     t_track.append(md.Message(type='note_on', velocity=0, note=62, time=150))
-    #     t_track.append(md.Message(type='note_on', velocity=0, note=67, time=0))
-    #     t_file.tracks.append(t_track)
-    #     print(t_file)
-    #     t_file.save('test.mid')
-    #     midifiles = [t_file]
-    #     midifiles = only_note(midifiles)
-    #     midifiles = highest_pitch(midifiles)
-    #     t_file = midifiles[0]
-    #     print(t_file)
-    #     t_file.save('test2.mid')

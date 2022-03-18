@@ -15,8 +15,8 @@ def halve_files(midifiles):
     for i, midifile in enumerate(midifiles):
         out_file_1 = md.MidiFile()
         out_file_2 = md.MidiFile()
-        out_file_1.ticks_per_beat = out_file_2.ticks_per_beat = midifile.ticks_per_beat
-
+        out_file_1.ticks_per_beat = midifile.ticks_per_beat
+        out_file_2.ticks_per_beat = midifile.ticks_per_beat
         in_track = midifile.tracks[0]
         out_track_1 = md.MidiTrack()
         out_track_2 = md.MidiTrack()
@@ -41,11 +41,10 @@ def save_midi(midifiles, path):
         midifile.save(f"{path}_{i}.mid")
 
 
-def main(folders):
+def main():
     IN_PATH = 'D:/AlphaProject/_PythonML/MidiGAN/melodies'
+    folders = ["battle", "title"]
     for folder in folders:
         midi_files = folder_to_midifile_arr(f"{IN_PATH}/{folder}")
         midi_files = halve_files(midi_files)
         save_midi(midi_files, f"{IN_PATH}/{folder}_halved/{folder}_halved")
-
-

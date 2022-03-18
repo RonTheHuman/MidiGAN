@@ -41,7 +41,7 @@ def make_plot(dbase_name, feature_name, feature_units, dbase, start_run, runs, e
 
 
 def main():
-    task = 0
+    task = 3
 
     # show not collapse
     if task == 0:
@@ -51,7 +51,7 @@ def main():
                 folder = "battle"
             else:
                 folder = "title"
-            epoch = 3500
+            epoch = 4096
             file_contains = f"h{epoch}"
             path = f"gan_results/conv_gan_1.1/{folder}/midi/run{run}"
 
@@ -67,7 +67,7 @@ def main():
             #                      [3, 4, 5, 3, 4, 5, 3, 4, 5]])
             # print(f"notearrs: \n {notearrs} \n")
 
-            single_note = True
+            single_note = False
             note_to_analyze = 1
             """
             create three types of histograms:
@@ -130,10 +130,10 @@ def main():
             if single_note:
                 exit()
             all_deviations.append(run_deviations)
-        np.savetxt("gan_results/plots/final_epoch_deviations.csv", np.asarray(all_deviations), delimiter=",")
+        np.savetxt("gan_results/plots/over_final_epoch_deviations.csv", np.asarray(all_deviations), delimiter=",")
         print(all_deviations)
 
-    # show improvement
+    # create average note length graph
     if task == 1:
         note_len_files = sorted(os.listdir("gan_results/features/note_length"))
         run_avgs = []
@@ -161,7 +161,7 @@ def main():
         make_plot("title", "average note length", "sec",
                   dbase_avgs["title.csv"], 4, run_avgs[3:], saved_epochs)
 
-    # show not running off
+    # show not running off: reaching top or bottom note
     if task == 2:
         all_count = []
         saved_epochs = ("16", "50", "100", "300", "700", "1024", "2048", "2500", "3000", "3500")
@@ -177,11 +177,11 @@ def main():
             run_count = []
             for epoch in saved_epochs:
                 epoch_count = 0
-                epoch_files = list([file for file in files if f"h{epoch}" in file])[:16]
+                # get [from_each_epoch] melodies from each epoch
+                epoch_files = list([file for file in files if f"h{epoch}" in file])[:from_each_epoch]
                 for file in epoch_files:
                     print(file)
                     mfile = MidiFile(f"{path}/{file}")
-                    ran_off = False
                     for msg in reversed(mfile.tracks[0][1:-1]):
                         if msg.note == 127 or msg.note == 0:
                             print("ran off")
@@ -191,14 +191,32 @@ def main():
             all_count.append(run_count)
         print(all_count)
 
-        np.savetxt("gan_results/plots/runoff_p.csv", np.asarray(all_count), delimiter=",")
+        np.savetxt("gan_results/plots/runoff_p_5.csv", np.asarray(all_count), delimiter=",")
 
-        # avg_count = []
-        # c_len = len(all_count)
-        # for i in range(len(saved_epochs)):
-        #     c_sum = sum([x[i] for x in all_count])
-        #     avg = c_sum/c_len
-        #     avg_count.append(avg)
-        # plt.plot(saved_epochs, avg_count, f"-o", label=f"run average")
-        # plt.legend()
-        # plt.show()
+        avg_count = []
+        c_len = len(all_count)
+        for i in range(len(saved_epochs)):
+            c_sum = sum([x[i] for x in all_count])
+            avg = c_sum/c_len
+            avg_count.append(avg)
+        plt.plot(saved_epochs, avg_count, f"-o")
+        plt.xlabel("epochs")
+        plt.ylabel("percentage of melodies running off")
+        plt.savefig("gan_results/plots/avg_runoff_p")
+        plt.show()
+
+    # check num of highest notes in dbase
+    if task == 3:
+        all_count = 0
+        for folder in ("title", "battle"):
+            path = f"melodies/{folder}"
+            files = os.listdir(path)
+            for file in files:
+                print(file)
+                mfile = MidiFile(f"{path}/{file}")
+                for msg in reversed(mfile.tracks[0][1:-1]):
+                    if msg.note == 127 or msg.note == 0:
+                        print("ran off")
+                        all_count += 1
+                        break
+        print(f"all count: {all_count}")
